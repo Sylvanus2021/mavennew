@@ -1,0 +1,101 @@
+pipeline
+{
+    agent any 
+    stages
+    {
+        stage('continuousDownload') 
+        {
+          steps
+          {
+              script
+              {
+                try
+                {
+                   git 'https://github.com/selenium-saikrishna/maven.git' 
+                }
+                catch(Exception e1) 
+                {
+                    mail bcc: '', body: 'Jenkins is unable to download code from github', cc: '', from: '', replyTo: '', subject: 'Download failed', to: 'git.team@gmail.com'
+                    exit(1)
+                }
+           }
+          }
+        }
+       stage('continuousBuild') 
+        {
+          steps
+          {
+              script
+              {
+                try
+                {
+                   sh 'mvn package'
+                }
+                catch(Exception e2) 
+                {
+                    mail bcc: '', body: 'Jenkins is unable to create an artifact from the downloaded code', cc: '', from: '', replyTo: '', subject: 'Build failed', to: 'Developer.team@gmail.com'
+                    exit(1)
+                }
+           }
+          }
+        }
+      stage('continuousDeployment') 
+         {
+          steps
+          {
+              script
+              {
+                try
+                {
+                  deploy adapters: [tomcat9(credentialsId: 'dfb555e3-9d9f-43f9-ae2b-93ab6e7b36c6', path: '', url: 'http://172.31.10.54:8080')], contextPath: 'testapp', war: '**/*.war'
+                }
+                catch(Exception e3) 
+                {
+                   mail bcc: '', body: 'Jenkins is unable to deploy artifact into tomcat on the  QAServers', cc: '', from: '', replyTo: '', subject: 'Deployment failed', to: 'middleware.team@gmail.com'
+                    exit(1)
+                }
+           }
+          }
+        }
+   stage('continuousTesting') 
+         {
+          steps
+          {
+              script
+              {
+                try
+                {
+                  git 'https://github.com/selenium-saikrishna/FunctionalTesting.git'
+                  sh 'java -jar /home/ubuntu/.jenkins/workspace/declar/testing.jar'
+                }
+                catch(Exception e4) 
+                {
+                   mail bcc: '', body: 'Selenium testing scripts are failing', cc: '', from: '', replyTo: '', subject: 'Testing failed', to: 'Testing.team@gmail.com'
+                    exit(1)
+                }
+           }
+          }
+        }
+        stage('continuousDelivery') 
+         {
+          steps
+          {
+              script
+              {
+                try
+                {
+                 deploy adapters: [tomcat9(credentialsId: 'dfb555e3-9d9f-43f9-ae2b-93ab6e7b36c6', path: '', url: 'http://172.31.13.232:8080')], contextPath: 'ProdApp', war: '**/*.war'
+                 input message: 'Waiting for delivery approval', submitter: 'Tom'
+                }
+                catch(Exception e5) 
+                {
+                   mail bcc: '', body: 'Jenkins failed to deploy to ProdServer', cc: '', from: '', replyTo: '', subject: 'delivery failed', to: 'Delivery.team@gmail.com'
+                    
+                }
+           }
+          }
+        }
+    }
+    
+
+}
