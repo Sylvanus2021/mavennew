@@ -1,4 +1,4 @@
-pipeline
+'https://github.com/selenium-saikrishna/maven.git'pipeline
 {
     agent any 
     stages
